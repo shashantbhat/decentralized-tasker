@@ -6,6 +6,9 @@ import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { JWT_SECRET } from ".."
 import { authMiddleware } from "../middleware"
+import dotenv from "dotenv"
+
+dotenv.config();
 
 const router = Router();
 
@@ -13,9 +16,8 @@ const prismaClient = new PrismaClient();
 
 const s3Client = new S3Client({
     credentials: { 
-        accessKeyId: "AKIA4J4CCXKBNUK4Q43U",
-        secretAccessKey: "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"
-
+        accessKeyId: process.env.awsAccessKeyId ?? "",
+        secretAccessKey: process.env.awsSecretAccessKey ?? ""
     },
     region: "eu-north-1",
 })
