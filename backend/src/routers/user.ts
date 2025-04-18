@@ -1,12 +1,49 @@
 import { PrismaClient } from "@prisma/client"
 import { Router } from "express"
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken"      
+import { S3Client, GetObjectCommand, PutObjectCommand} from '@aws-sdk/client-s3'
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { JWT_SECRET } from ".."
+import { authMiddleware } from "../middleware"
 
 const router = Router();
 
 const prismaClient = new PrismaClient();
-const JWT_SECRET = "shash"; 
 
+const s3Client = new S3Client({
+    credentials: { 
+        accessKeyId: "AKIA4J4CCXKBNUK4Q43U",
+        secretAccessKey: "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"
+
+    },
+    region: "eu-north-1",
+})
+
+router.get("/presignedUrl", authMiddleware, async (req, res) => {
+    // @ts-ignore
+    const userId = req.userId;
+
+    const { url, fields } = await createPresignedPost(s3Client, {
+        Bucket: 'decentraliszed-taskerr',
+        Key: `tasker/${userId}/${Math.random()}/image.jpg`,
+        Conditions: [
+          ['content-length-range', 0, 5 * 1024 * 1024] // 5 MB max
+        ],
+        Fields: {
+            // success_action_status: '201',
+            'Content-Type': 'image/png'
+        },
+        Expires: 3600
+    })
+
+    console.log({url, fields})
+
+    res.json({
+        preSignedUrl: url,
+        fields
+    })
+})
 
 //here the signin is done using the wallet
 router.post("/signin", async (req, res) => {
