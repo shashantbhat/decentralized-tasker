@@ -4,9 +4,12 @@ import jwt from "jsonwebtoken"
 import { S3Client, GetObjectCommand, PutObjectCommand} from '@aws-sdk/client-s3'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { JWT_SECRET } from ".."
+import { JWT_SECRET } from "../config"
 import { authMiddleware } from "../middleware"
 import dotenv from "dotenv"
+import { createTaskInput } from "./types"
+import ts from "typescript"
+import { TOTAL_DECMIALS } from "../config"
 
 dotenv.config();
 
@@ -21,6 +24,107 @@ const s3Client = new S3Client({
     },
     region: "eu-north-1",
 })
+
+const defaultTitle = "Select the most clicked thumbnail";
+
+router.get("/task", authMiddleware, async (req, res) => {
+    // @ts-ignore
+    const taskId: string = req.query.taskId;
+    // @ts-ignore
+    const userId: string = req.userId;
+
+    const taskDetails = await prismaClient.task.findFirst({
+        where: {
+            user_id: Number(userId),
+            id: Number(taskId)
+        },
+        include: {
+            options: true
+        }
+    })
+
+    if (!taskDetails) {
+        res.status(411).json({
+            message: "You dont have access to this task"
+        })
+        return;
+    }
+
+    // Todo: Can u make this faster?
+    const responses = await prismaClient.submission.findMany({
+        where: {
+            task_id: Number(taskId)
+        },
+        include: {
+            option: true 
+        }
+    });
+
+    const result: Record<string, {
+        count: number;
+        option: {
+            imageUrl: string
+        }
+    }> = {};
+
+    taskDetails.options.forEach(option => {
+        result[option.id] = {
+            count: 0,
+            option: {
+                imageUrl: option.image_url
+            }
+        }
+    })
+
+    responses.forEach(r => {
+        result[r.option_id].count++;
+    });
+
+    res.json({
+        result
+    })
+
+})
+
+
+router.post("/task", authMiddleware, async (req, res) => {
+    // @ts-ignore
+    const userId = req.userId;
+    const body = req.body;
+    const parseData = createTaskInput.safeParse(body);
+
+    if (!parseData.success) {
+        res.status(411).json({
+            message: "invalid input"
+        })
+        return;
+    }
+
+    let response = await prismaClient.$transaction(async tx => {
+        const response = await tx.task.create({
+            data: {
+                title: parseData.data.title ?? defaultTitle,
+                amount: 1 * TOTAL_DECMIALS,
+                signature: parseData.data.signature,
+                user_id: userId
+            }
+        });
+
+        await tx.option.createMany({
+            data: parseData.data.options.map(x => ({
+                image_url: x.imageUrl,
+                task_id: response.id
+            }))
+        })
+
+        return response;
+    })
+
+    res.json({
+        id: response.id
+    })
+});
+
 
 router.get("/presignedUrl", authMiddleware, async (req, res) => {
     // @ts-ignore
@@ -38,8 +142,6 @@ router.get("/presignedUrl", authMiddleware, async (req, res) => {
         },
         Expires: 3600
     })
-
-    console.log({url, fields})
 
     res.json({
         preSignedUrl: url,
