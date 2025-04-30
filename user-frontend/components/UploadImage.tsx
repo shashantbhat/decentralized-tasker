@@ -23,16 +23,18 @@ export function UploadImage({ onImageAdded, image }: {
             formData.set("bucket", response.data.fields["bucket"])
             formData.set("X-Amz-Algorithm", response.data.fields["X-Amz-Algorithm"]);
             formData.set("X-Amz-Credential", response.data.fields["X-Amz-Credential"]);
-            formData.set("X-Amz-Algorithm", response.data.fields["X-Amz-Algorithm"]);
+            // formData.set("X-Amz-Algorithm", response.data.fields["X-Amz-Algorithm"]);
             formData.set("X-Amz-Date", response.data.fields["X-Amz-Date"]);
             formData.set("key", response.data.fields["key"]);
             formData.set("Policy", response.data.fields["Policy"]);
             formData.set("X-Amz-Signature", response.data.fields["X-Amz-Signature"]);
-            formData.set("X-Amz-Algorithm", response.data.fields["X-Amz-Algorithm"]);
+            // formData.set("X-Amz-Algorithm", response.data.fields["X-Amz-Algorithm"]);
+            formData.set("Content-Type", file.type);
             formData.append("file", file);
             const awsResponse = await axios.post(presignedUrl, formData);
 
             onImageAdded(`${CLOUDFRONT_URL}/${response.data.fields["key"]}`);
+
         } catch(e) {
             console.log(e)
         }
