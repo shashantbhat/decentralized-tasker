@@ -35,36 +35,40 @@ export default function Page() {
             getTaskDetails(taskId)
                 .then((data) => {
                     setResult(data.result);
-                    setTaskDetails(data.taskDetails); // <-- `title` should be present here
+                    setTaskDetails(data.taskDetails);
                 })
                 .catch(console.error);
         }
     }, [taskId]);
 
     return (
-        <div>
+        <div className="min-h-screen bg-[#121212] text-white">
             <Appbar />
-            {taskDetails.title ? (
-                <div className='text-2xl pt-20 flex justify-center'>
-                    {taskDetails.title}
-                </div>
-            ) : (
-                <div className='text-2xl pt-20 flex justify-center text-gray-500'>
-                    Loading task details...
-                </div>
-            )}
-            <div className='flex justify-center pt-8 flex-wrap gap-4'>
-                {Object.keys(result).length > 0 ? (
-                    Object.keys(result).map((key) => (
-                        <Task
-                            key={key}
-                            imageUrl={result[key].option.imageUrl}
-                            votes={result[key].count}
-                        />
-                    ))
+            <div className='pt-24 px-6'>
+                {taskDetails.title ? (
+                    <h1 className='text-4xl font-extrabold text-center text-purple-400'>
+                        {taskDetails.title}
+                    </h1>
                 ) : (
-                    <div className="text-center text-gray-400 pt-4">No results to display</div>
+                    <p className='text-lg text-center text-gray-500'>
+                        Loading task details...
+                    </p>
                 )}
+                <div className='flex justify-center pt-10 flex-wrap gap-8'>
+                    {Object.keys(result).length > 0 ? (
+                        Object.keys(result).map((key) => (
+                            <Task
+                                key={key}
+                                imageUrl={result[key].option.imageUrl}
+                                votes={result[key].count}
+                            />
+                        ))
+                    ) : (
+                        <div className="text-center text-gray-400 pt-4">
+                            No results to display
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -75,13 +79,13 @@ function Task({ imageUrl, votes }: {
     votes: number;
 }) {
     return (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center border border-gray-700 rounded-lg shadow-lg p-4 bg-[#1a1a1a] w-80 hover:bg-[#222222] transition-all duration-200">
             <img
-                className="p-2 w-96 rounded-md"
+                className="w-full h-auto rounded-md mb-4 object-cover"
                 src={imageUrl}
                 alt="Option image"
             />
-            <div className='flex justify-center text-lg font-semibold'>
+            <div className='text-lg font-medium text-gray-300'>
                 Votes: {votes}
             </div>
         </div>

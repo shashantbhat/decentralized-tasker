@@ -1,10 +1,12 @@
 export const Hero = () => {
-    return <div className="text-black pt-10">
-        <div className="text-2xl flex justify-center">
-            Welcome to Turkify
+    return (
+        <div className="pt-20 text-white bg-[#0f0f0f] min-h-[40vh]">
+            <div className="text-4xl font-extrabold text-purple-400 flex justify-center tracking-wide">
+                Welcome to Turkify
+            </div>
+            <div className="text-xl text-gray-300 flex justify-center pt-6">
+                Your one-stop destination for getting your data labeled
+            </div>
         </div>
-        <div className="text-lg flex justify-center pt-8">
-            Your one stop destination to getting your data labelled
-        </div>
-    </div>
-}
+    );
+};
