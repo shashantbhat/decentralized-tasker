@@ -27,7 +27,7 @@ export const Appbar = () => {
     return (
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-[#0D0D0D] shadow-md">
             <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent tracking-tight">
-                Turkify<span className="text-gray-400 ml-1 text-sm">(Worker)</span>
+            decentralized-tasker<span className="text-gray-400 ml-1 text-sm">(Worker)</span>
             </Link>
 
             {/* Connect Wallet */}
