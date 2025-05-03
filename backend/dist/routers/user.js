@@ -26,6 +26,12 @@ const config_2 = require("../config");
 dotenv_1.default.config();
 const router = (0, express_1.Router)();
 const prismaClient = new client_1.PrismaClient();
+prismaClient.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
+    // Code running in a transaction...
+}), {
+    maxWait: 5000, // default: 2000
+    timeout: 10000, // default: 5000
+});
 const s3Client = new client_s3_1.S3Client({
     credentials: {
         accessKeyId: (_a = process.env.awsAccessKeyId) !== null && _a !== void 0 ? _a : "",

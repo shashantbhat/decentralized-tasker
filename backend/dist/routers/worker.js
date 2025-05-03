@@ -21,6 +21,12 @@ const db_1 = require("../db");
 const types_1 = require("./types");
 const TOTAL_SUBMISSIONS = 100;
 const prismaClient = new client_1.PrismaClient();
+prismaClient.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
+    // Code running in a transaction...
+}), {
+    maxWait: 5000, // default: 2000
+    timeout: 10000, // default: 5000
+});
 const router = (0, express_1.Router)();
 router.post("/payouts", middleware_1.workerMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // @ts-ignore
@@ -45,7 +51,7 @@ router.post("/payouts", middleware_1.workerMiddleware, (req, res) => __awaiter(v
     //     });
     //     return;
     // }
-    const address = "0x1234567890abcdef1234567890abcdef12345678abc"; // Replace with actual address
+    const address = "0x1234567fdf890abcdef1234567890abcdef12345678abc"; // Replace with actual address
     const txnId = "0x12312312"; // Replace with actual transaction ID
     // Perform the transaction
     yield prismaClient.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {

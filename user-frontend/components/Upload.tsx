@@ -16,18 +16,36 @@ export const Upload = () => {
     const router = useRouter();
 
     async function onSubmit() {
-        const response = await axios.post(`${BACKEND_URL}/v1/user/task`, {
-            options: images.map(image => ({
-                imageUrl: image,
-            })),
-            title,
-            signature: "hard_coded"
-        }, {
-            headers: {
-                "Authorization": localStorage.getItem("token")
-            }
-        })
-        router.push(`/task/${response.data.id}`)
+        if (images.length < 2) {
+            alert("Please upload at least 2 images to create a task.");
+            return;
+        }
+    
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("User not authenticated. Please log in.");
+            return;
+        }
+    
+        try {
+            const response = await axios.post(`${BACKEND_URL}/v1/user/task`, {
+                options: images.map(image => ({
+                    imageUrl: image,
+                })),
+                title,
+                signature: "hard_coded"
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": token
+                }
+            });
+    
+            router.push(`/task/${response.data.id}`);
+        } catch (error: any) {
+            console.error("Upload failed:", error);
+            alert("Task creation failed. Please try again.");
+        }
     }
 
     // async function makePayment() {

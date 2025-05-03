@@ -28,8 +28,7 @@ export const NextTask = () => {
             }
         })
             .then(res => {
-                const task = (res.data as { task: Task }).task;
-                setCurrentTask(task);
+                setCurrentTask(res.data.task);
                 setLoading(false)
             })
             .catch(e => {
@@ -55,11 +54,16 @@ export const NextTask = () => {
     }
 
     return <div>
+        
         <div className='text-2xl pt-20 flex justify-center'>
-            {currentTask.title}
-            <div className="pl-4">
-                {submitting && "Submitting..."}
+            <div>
+                <span className="justify-center">task id: </span> {currentTask.id}<br/>
+                {currentTask.title} 
+                <div className="pl-4">
+                    {submitting && "Submitting..."}
+                </div>
             </div>
+            
         </div>
         <div className='flex justify-center pt-8'>
             {currentTask.options.map(option => <Option onSelect={async () => {
@@ -74,7 +78,7 @@ export const NextTask = () => {
                         }
                     });
     
-                    const nextTask = (response.data as { nextTask: Task | null }).nextTask;
+                    const nextTask = response.data.nextTask;
                     if (nextTask) {
                         setCurrentTask(nextTask)
                     } else {

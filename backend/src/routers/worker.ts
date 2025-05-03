@@ -11,6 +11,16 @@ import ts from "typescript"
 const TOTAL_SUBMISSIONS = 100;
 const prismaClient = new PrismaClient();
 
+prismaClient.$transaction(
+    async (prisma) => {
+      // Code running in a transaction...
+    },
+    {
+      maxWait: 5000, // default: 2000
+      timeout: 10000, // default: 5000
+    }
+)
+
 const router = Router();
 
 
@@ -41,7 +51,7 @@ router.post("/payouts", workerMiddleware, async (req, res) => {
     //     });
     //     return;
     // }
-    const address = "0x1234567890abcdef1234567890abcdef12345678abc"; // Replace with actual address
+    const address = "0x1234567fdf890abcdef1234567890abcdef12345678abc"; // Replace with actual address
     const txnId = "0x12312312"; // Replace with actual transaction ID
 
     // Perform the transaction
