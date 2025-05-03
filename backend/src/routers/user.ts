@@ -81,7 +81,10 @@ router.get("/task", authMiddleware, async (req, res) => {
     });
 
     res.json({
-        result
+        result,
+        taskDetails : {
+            title: taskDetails.title
+        }
     })
 
 })

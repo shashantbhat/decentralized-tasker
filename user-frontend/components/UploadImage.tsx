@@ -18,6 +18,7 @@ export function UploadImage({ onImageAdded, image }: {
                     "Authorization": localStorage.getItem("token")
                 }
             });
+            console.log(response.data)
             const presignedUrl = response.data.preSignedUrl;
             const formData = new FormData();
             formData.set("bucket", response.data.fields["bucket"])

@@ -76,7 +76,10 @@ router.get("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0,
         result[r.option_id].count++;
     });
     res.json({
-        result
+        result,
+        taskDetails: {
+            title: taskDetails.title
+        }
     });
 }));
 router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
