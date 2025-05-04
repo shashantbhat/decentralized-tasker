@@ -10,6 +10,8 @@ import dotenv from "dotenv"
 import { createTaskInput } from "./types"
 import ts from "typescript"
 import { TOTAL_DECMIALS } from "../config"
+import nacl from "tweetnacl";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js"
 
 dotenv.config();
 
@@ -166,17 +168,40 @@ router.get("/presignedUrl", authMiddleware, async (req, res) => {
 router.post("/signin", async (req, res) => {
 
     //TODO: add the signed verification here
-    const hardcodedWalletAddress = "0x1234567890abcdef1234567890abcdef12345678";
+    // const hardcodedWalletAddress = "0x1234567890abcdef1234567890abcdef12345678";
 
-    const exsistingUser = await prismaClient.user.findFirst({
+    // const exsistingUser = await prismaClient.user.findFirst({
+    //     where: {
+    //         address: hardcodedWalletAddress
+    //     },
+    // })
+
+    const { publicKey, signature } = req.body;
+    const message = new TextEncoder().encode("Sign into decentralized-tasker");
+
+    const result = nacl.sign.detached.verify(
+        message,
+        new Uint8Array(signature.data),
+        new PublicKey(publicKey).toBytes(),
+    );
+
+
+    if (!result) {
+        res.status(411).json({
+            message: "Incorrect signature"
+        })
+        return;
+    }
+
+    const existingUser = await prismaClient.user.findFirst({
         where: {
-            address: hardcodedWalletAddress
-        },
+            address: publicKey
+        }
     })
 
-    if (exsistingUser){
+    if (existingUser){
         const token = jwt.sign({
-            userId: exsistingUser.id
+            userId: existingUser.id
         }, JWT_SECRET)
 
         res.json({
@@ -186,7 +211,7 @@ router.post("/signin", async (req, res) => {
     } else{
         const user = await prismaClient.user.create({
             data: {
-                address: hardcodedWalletAddress,
+                address: publicKey,
             }
         })
         const token = jwt.sign({

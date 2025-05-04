@@ -23,6 +23,8 @@ const middleware_1 = require("../middleware");
 const dotenv_1 = __importDefault(require("dotenv"));
 const types_1 = require("./types");
 const config_2 = require("../config");
+const tweetnacl_1 = __importDefault(require("tweetnacl"));
+const web3_js_1 = require("@solana/web3.js");
 dotenv_1.default.config();
 const router = (0, express_1.Router)();
 const prismaClient = new client_1.PrismaClient();
@@ -144,15 +146,29 @@ router.get("/presignedUrl", middleware_1.authMiddleware, (req, res) => __awaiter
 //here the signin is done using the wallet
 router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //TODO: add the signed verification here
-    const hardcodedWalletAddress = "0x1234567890abcdef1234567890abcdef12345678";
-    const exsistingUser = yield prismaClient.user.findFirst({
+    // const hardcodedWalletAddress = "0x1234567890abcdef1234567890abcdef12345678";
+    // const exsistingUser = await prismaClient.user.findFirst({
+    //     where: {
+    //         address: hardcodedWalletAddress
+    //     },
+    // })
+    const { publicKey, signature } = req.body;
+    const message = new TextEncoder().encode("Sign into decentralized-tasker");
+    const result = tweetnacl_1.default.sign.detached.verify(message, new Uint8Array(signature.data), new web3_js_1.PublicKey(publicKey).toBytes());
+    if (!result) {
+        res.status(411).json({
+            message: "Incorrect signature"
+        });
+        return;
+    }
+    const existingUser = yield prismaClient.user.findFirst({
         where: {
-            address: hardcodedWalletAddress
-        },
+            address: publicKey
+        }
     });
-    if (exsistingUser) {
+    if (existingUser) {
         const token = jsonwebtoken_1.default.sign({
-            userId: exsistingUser.id
+            userId: existingUser.id
         }, config_1.JWT_SECRET);
         res.json({
             token
@@ -161,7 +177,7 @@ router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function*
     else {
         const user = yield prismaClient.user.create({
             data: {
-                address: hardcodedWalletAddress,
+                address: publicKey,
             }
         });
         const token = jsonwebtoken_1.default.sign({
