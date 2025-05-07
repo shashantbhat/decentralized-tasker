@@ -9,9 +9,15 @@ import { authMiddleware } from "../middleware"
 import dotenv from "dotenv"
 import { createTaskInput } from "./types"
 import ts from "typescript"
-import { TOTAL_DECMIALS } from "../config"
+import { TOTAL_DECIMALS } from "../config"
 import nacl from "tweetnacl";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js"
+
+const connection = new Connection(process.env.RPC_URL ?? "");
+
+const PARENT_WALLET_ADDRESS = "43aC65pQNkYtU6vTVY3942MpsUDkaHhhPAgyrkdingpV";
+
+const defaultTitle = "Select the most clicked thumbnail";
 
 dotenv.config();
 
@@ -37,7 +43,6 @@ const s3Client = new S3Client({
     region: "eu-north-1",
 })
 
-const defaultTitle = "Select the most clicked thumbnail";
 
 router.get("/task", authMiddleware, async (req, res) => {
     // @ts-ignore
@@ -108,9 +113,49 @@ router.post("/task", authMiddleware, async (req, res) => {
     const body = req.body;
     const parseData = createTaskInput.safeParse(body);
 
+    const user = await prismaClient.user.findFirst({
+        where: {
+            id: userId
+        }
+    })
+
     if (!parseData.success) {
         res.status(411).json({
             message: "invalid input"
+        })
+        return;
+    }
+
+    if (!parseData.success) {
+        res.status(411).json({
+            message: "You've sent the wrong inputs"
+        })
+        return;
+    }
+
+    const transaction = await connection.getTransaction(parseData.data.signature, {
+        maxSupportedTransactionVersion: 1
+    });
+
+    console.log(transaction);
+
+    if ((transaction?.meta?.postBalances[1] ?? 0) - (transaction?.meta?.preBalances[1] ?? 0) !== 100000000) {
+        res.status(411).json({
+            message: "Transaction signature/amount incorrect"
+        })
+        return;
+    }
+
+    if (transaction?.transaction.message.getAccountKeys().get(1)?.toString() !== PARENT_WALLET_ADDRESS) {
+        res.status(411).json({
+            message: "Transaction sent to wrong address"
+        })
+        return;
+    }
+
+    if (transaction?.transaction.message.getAccountKeys().get(0)?.toString() !== user?.address) {
+        res.status(411).json({
+            message: "Transaction sent to wrong address"
         })
         return;
     }
@@ -119,7 +164,7 @@ router.post("/task", authMiddleware, async (req, res) => {
         const response = await tx.task.create({
             data: {
                 title: parseData.data.title ?? defaultTitle,
-                amount: 1 * TOTAL_DECMIALS,
+                amount: 0.1 * TOTAL_DECIMALS,
                 signature: parseData.data.signature,
                 user_id: userId
             }

@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a, _b;
+var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const express_1 = require("express");
@@ -25,6 +25,9 @@ const types_1 = require("./types");
 const config_2 = require("../config");
 const tweetnacl_1 = __importDefault(require("tweetnacl"));
 const web3_js_1 = require("@solana/web3.js");
+const connection = new web3_js_1.Connection((_a = process.env.RPC_URL) !== null && _a !== void 0 ? _a : "");
+const PARENT_WALLET_ADDRESS = "43aC65pQNkYtU6vTVY3942MpsUDkaHhhPAgyrkdingpV";
+const defaultTitle = "Select the most clicked thumbnail";
 dotenv_1.default.config();
 const router = (0, express_1.Router)();
 const prismaClient = new client_1.PrismaClient();
@@ -36,12 +39,11 @@ prismaClient.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function
 });
 const s3Client = new client_s3_1.S3Client({
     credentials: {
-        accessKeyId: (_a = process.env.awsAccessKeyId) !== null && _a !== void 0 ? _a : "",
-        secretAccessKey: (_b = process.env.awsSecretAccessKey) !== null && _b !== void 0 ? _b : ""
+        accessKeyId: (_b = process.env.awsAccessKeyId) !== null && _b !== void 0 ? _b : "",
+        secretAccessKey: (_c = process.env.awsSecretAccessKey) !== null && _c !== void 0 ? _c : ""
     },
     region: "eu-north-1",
 });
-const defaultTitle = "Select the most clicked thumbnail";
 router.get("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // @ts-ignore
     const taskId = req.query.taskId;
@@ -91,13 +93,47 @@ router.get("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0,
     });
 }));
 router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f;
     // @ts-ignore
     const userId = req.userId;
     const body = req.body;
     const parseData = types_1.createTaskInput.safeParse(body);
+    const user = yield prismaClient.user.findFirst({
+        where: {
+            id: userId
+        }
+    });
     if (!parseData.success) {
         res.status(411).json({
             message: "invalid input"
+        });
+        return;
+    }
+    if (!parseData.success) {
+        res.status(411).json({
+            message: "You've sent the wrong inputs"
+        });
+        return;
+    }
+    const transaction = yield connection.getTransaction(parseData.data.signature, {
+        maxSupportedTransactionVersion: 1
+    });
+    console.log(transaction);
+    if (((_b = (_a = transaction === null || transaction === void 0 ? void 0 : transaction.meta) === null || _a === void 0 ? void 0 : _a.postBalances[1]) !== null && _b !== void 0 ? _b : 0) - ((_d = (_c = transaction === null || transaction === void 0 ? void 0 : transaction.meta) === null || _c === void 0 ? void 0 : _c.preBalances[1]) !== null && _d !== void 0 ? _d : 0) !== 100000000) {
+        res.status(411).json({
+            message: "Transaction signature/amount incorrect"
+        });
+        return;
+    }
+    if (((_e = transaction === null || transaction === void 0 ? void 0 : transaction.transaction.message.getAccountKeys().get(1)) === null || _e === void 0 ? void 0 : _e.toString()) !== PARENT_WALLET_ADDRESS) {
+        res.status(411).json({
+            message: "Transaction sent to wrong address"
+        });
+        return;
+    }
+    if (((_f = transaction === null || transaction === void 0 ? void 0 : transaction.transaction.message.getAccountKeys().get(0)) === null || _f === void 0 ? void 0 : _f.toString()) !== (user === null || user === void 0 ? void 0 : user.address)) {
+        res.status(411).json({
+            message: "Transaction sent to wrong address"
         });
         return;
     }
@@ -106,7 +142,7 @@ router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0
         const response = yield tx.task.create({
             data: {
                 title: (_a = parseData.data.title) !== null && _a !== void 0 ? _a : defaultTitle,
-                amount: 1 * config_2.TOTAL_DECMIALS,
+                amount: 0.1 * config_2.TOTAL_DECIMALS,
                 signature: parseData.data.signature,
                 user_id: userId
             }

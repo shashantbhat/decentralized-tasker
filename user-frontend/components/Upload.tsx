@@ -4,10 +4,15 @@ import { BACKEND_URL } from "@/utils";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 
 export const Upload = () => {
     const [images, setImages] = useState<string[]>([]);
     const [title, setTitle] = useState("");
+    const [txSignature, setTxSignature] = useState("");
+    const { publicKey, sendTransaction } = useWallet();
+    const { connection } = useConnection();
     const router = useRouter();
 
     async function onSubmit() {
@@ -28,10 +33,10 @@ export const Upload = () => {
                     imageUrl: image,
                 })),
                 title,
-                signature: "hard_coded"
+                signature: txSignature
             }, {
                 headers: {
-                    "Content-Type": "application/json",
+                    // "Content-Type": "application/json",
                     "Authorization": token
                 }
             });
@@ -41,6 +46,27 @@ export const Upload = () => {
             console.error("Upload failed:", error);
             alert("Task creation failed. Please try again.");
         }
+    }
+
+    async function makePayment() {
+
+        const transaction = new Transaction().add(
+            SystemProgram.transfer({
+                fromPubkey: publicKey!,
+                toPubkey: new PublicKey("43aC65pQNkYtU6vTVY3942MpsUDkaHhhPAgyrkdingpV"),
+                lamports: 100000000,
+            })
+        );
+
+        const {
+            context: { slot: minContextSlot },
+            value: { blockhash, lastValidBlockHeight }
+        } = await connection.getLatestBlockhashAndContext();
+
+        const signature = await sendTransaction(transaction, connection, { minContextSlot });
+
+        await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
+        setTxSignature(signature);
     }
 
     return (
@@ -82,13 +108,18 @@ export const Upload = () => {
                     }} />
                 </div>
 
-                <div className="flex justify-center pt-10">
+                {/* <div className="flex justify-center pt-10">
                     <button
                         onClick={onSubmit}
                         type="button"
                         className="bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-sm px-6 py-3 transition duration-200"
                     >
                         Submit Task
+                    </button>
+                </div> */}
+                <div className="flex justify-center">
+                    <button onClick={txSignature ? onSubmit : makePayment} type="button" className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-sm px-6 py-3 transition duration-200  focus:outline-none focus:ring-4 focus:ring-gray-300 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
+                        {txSignature ? "Submit Task" : "Pay 0.1 SOL"}
                     </button>
                 </div>
             </div>
